@@ -19,7 +19,7 @@ var atable = {
   "-1":0,
   "D":0,
   "A":0,
-  "M":0,
+  "M":1,
   "!D":0,
   "!A":0,
   "-D":0,
@@ -115,23 +115,30 @@ var symTable = {
   "LOOP":4,
   "END":22
 };
-
+var symtop = 16
 assembler(file+".asm");
 
 function assembler(asmfile){
   var text = fs.readFileSync(asmfile, "utf8");
-  var lines = text.split(/\r?\n/);
+  var lines = text.split(/\r?\n/);//將讀取內容分成一行一行
   console.log(JSON.stringify(lines, null, 2))
   pass(lines)
 }
 
 function pass(lines){
   console.log('==============pass===============')
-  for(i = 0; i < lines.length; i++){
-   var c = choose(lines[i]);
+  for(i = 0; i < lines.length; i++){// console.log("**%s",lines[i])
+   lines[i] = lines[i].trim()
+    var c = choose(lines[i]);
     if(c === null)continue;
     else if(lines[i].startsWith("@")){
-      if(isNaN(c)!=false)c = symTable[c];
+      if(isNaN(c)!=false){
+       if(typeof symTable[c] === "undefined"){
+         addsym(c)
+        c = symTable[c];
+        }
+       else c = symTable[c];
+      }
       var s = ntocode(parseInt(c), 16, 2)
       console.log("'%s' => %s",s,lines[i])
     }
@@ -140,18 +147,25 @@ function pass(lines){
     
   }
 }
+function addsym(order){//console.log("*%s",order)
+  symTable[order] = symtop
+  //console.log("**%s",symTable[order])
+  symtop++
+}
 
-function choose(content){
-  if(content.length === 0)return null;
+function choose(content){//console.log("*%s",content)
+  if(content.length === 0){ return null;}
   else if(content.startsWith("@")){
    // console.log("@")
     return content.substring(1).trim();
   }
   else if(content.startsWith("M") || content.startsWith("A") || content.startsWith("D") || content.startsWith("-") || content.startsWith("!") || content.startsWith("0") || content.startsWith("1")){
     //console.log("adm");
-   if(content.match("=")=="=") var order = content.split("=");
+   if(content.match("=")){
+      var order = content.split("=")
+    }
    else var order = content.split(";");
-   // console.log("%s %s",order[0],order[1])
+   // console.log("order = %s %s",order[0],order[1])
    var s = wtocode(order);
    console.log("'%s' => %s",s,content);
   }
@@ -165,9 +179,11 @@ function ntocode(n, size, radix){//@
 }
 
 function wtocode(order){//AMD...
- // console.log("%s %s",order[0],order[1])
+  //console.log("o*=%s | %s | %s",order[0],order[1],order[3])
+  var a=order[1]
   if(order[1].startsWith('J')!=true){
-    var code = "111" + atable[order[0]] + ctable[order[1]] + dtable[order[0]];
+    var code = "111" + atable[order[1]] + ctable[order[1]] + dtable[order[0]];
+   // console.log("code=%s",code)
     return code + jtable[""]
   }
    else {
